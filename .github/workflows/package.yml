@@ -5,34 +5,30 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v3.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Install packages
-        # The Github's Ubuntu images since 20211122.1 are broken
-        # https://github.com/actions/virtual-environments/issues/4589
-        run: |
-          set -xeu -o pipefail
-          sudo dpkg --add-architecture i386
-          sudo apt-get -qq update
-          sudo apt-get -qq install -o=Dpkg::Use-Pty=0 -y --allow-downgrades libpcre2-8-0=10.34-7
-          sudo apt-get -qq install -o=Dpkg::Use-Pty=0 -y p7zip wine-stable wine32
-          wineboot
+      - name: ShellCheck
+        uses: ludeeus/action-shellcheck@00cae500b08a931fb5698e11e79bfbd38e612a38 # 2.0.0
 
       - name: Package
         run: ./extra/package.sh
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3.1.0
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: "!startsWith(github.ref, 'refs/tags/')"
         with:
+          compression-level: 0 # the .dat files are compressed already
           name: sets
           path: sets/*.dat
+          if-no-files-found: error
 
       - name: Release
-        uses: softprops/action-gh-release@v0.1.14
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: sets/*.dat
+          fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
